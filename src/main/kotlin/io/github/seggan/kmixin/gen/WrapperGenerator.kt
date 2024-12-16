@@ -104,7 +104,13 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
         var returnType = type.returnType
         val argumentTypes = type.argumentTypes.toMutableList()
         val isInject = if (annotations.any { it == Descriptors.SPONGE_INJECT }) {
-            if (type.returnType == Type.VOID_TYPE && !argumentTypes.any { it.descriptor == Descriptors.SPONGE_CALLBACK_INFO }) {
+            if (
+                type.returnType == Type.VOID_TYPE
+                &&
+                !argumentTypes.any { it.descriptor == Descriptors.SPONGE_CALLBACK_INFO }
+                &&
+                !argumentTypes.any { it.descriptor == Descriptors.SPONGE_CALLBACK_INFO_RETURNABLE }
+                ) {
                 argumentTypes.add(Type.getType(CallbackInfo::class.java))
             } else if (!argumentTypes.any { it.descriptor == Descriptors.SPONGE_CALLBACK_INFO_RETURNABLE }) {
                 argumentTypes.removeLast()
