@@ -28,6 +28,9 @@ gradlePlugin {
     plugins {
         create("kmixin") {
             id = "io.github.seggan.kmixin"
+            displayName = "KMixin"
+            description = "A plugin that generates Java wrappers around Kotlin mixins"
+            tags = setOf("mixin", "kotlin", "java")
             implementationClass = "io.github.seggan.kmixin.KMixinPlugin"
         }
     }
