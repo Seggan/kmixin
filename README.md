@@ -10,7 +10,7 @@ so you don't have to worry about Kotlin's extra code generation. Check out the
 ## Usage
 ```kotlin
 plugins {
-    id("com.github.seggan.kmixin") version "0.1.0"
+    id("io.github.seggan.kmixin") version "0.1.0"
 }
 ```
 That's it! KMixin will automatically insert its task into the build process.
