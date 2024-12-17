@@ -1,6 +1,7 @@
 plugins {
     `kotlin-dsl`
     id("com.gradle.plugin-publish") version "1.3.0"
+    id("com.gradleup.shadow") version "8.3.2"
 }
 
 repositories {
@@ -20,6 +21,10 @@ dependencies {
 
 kotlin {
     jvmToolchain(21)
+}
+
+tasks.shadowJar {
+    archiveClassifier = ""
 }
 
 gradlePlugin {
