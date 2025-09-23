@@ -4,11 +4,8 @@ import com.google.devtools.ksp.KspExperimental
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.Dependencies
 import com.google.devtools.ksp.processing.Resolver
-import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSFile
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
-import com.google.devtools.ksp.symbol.KSName
-import com.google.devtools.ksp.symbol.KSType
 
 @OptIn(KspExperimental::class)
 class KMixinProcessor(private val generator: CodeGenerator, private val resolver: Resolver) {
@@ -18,16 +15,23 @@ class KMixinProcessor(private val generator: CodeGenerator, private val resolver
         if (file.packageName.asString().isNotEmpty()) {
             sb.append("package ").append(file.packageName.asString()).append(";\n\n")
         }
-        sb.appendLine("import ${SpongeNames.MIXIN};")
         sb.appendLine("import ${SpongeNames.CALLBACK_INFO};")
         sb.appendLine("import ${SpongeNames.CALLBACK_INFO_RETURNABLE};")
+
+        sb.appendLine()
+        for (annotation in file.annotations) {
+            if (annotation.annotationType.resolve().javaType.startsWith("kotlin.")) continue
+            sb.appendLine(annotation.toJava())
+        }
+
         val className = file.fileName.replace(".kt", "Impl")
-        sb.append("public class ").append(className).append(" {\n")
+        sb.append("\npublic class ").append(className).append(" {\n")
         for (function in file.declarations.filter { it.hasAnnotation(SpongeNames.INJECT) }) {
             if (function !is KSFunctionDeclaration) continue
-            sb.appendLine(processFunction(function, file.packageName).prependIndent("    "))
+            sb.appendLine(processFunction(function).prependIndent("    "))
         }
         sb.append("}\n")
+
         generator.createNewFile(
             dependencies = Dependencies(false, file),
             packageName = file.packageName.asString(),
@@ -36,9 +40,13 @@ class KMixinProcessor(private val generator: CodeGenerator, private val resolver
         ).use { it.write(sb.toString().encodeToByteArray()) }
     }
 
-    private fun processFunction(function: KSFunctionDeclaration, pkg: KSName): String {
+    private fun processFunction(function: KSFunctionDeclaration): String {
         val sb = StringBuilder()
-        sb.append("public void ").append(function.simpleName.asString()).append('(')
+        for (annotation in function.annotations) {
+            if (annotation.annotationType.resolve().javaType.startsWith("kotlin.")) continue
+            sb.appendLine(annotation.toJava())
+        }
+        sb.append("private void ").append(function.simpleName.asString()).append('(')
         for (param in function.parameters) {
             val type = param.type.resolve().javaType
             if (type == SpongeNames.CALLBACK_INFO || type == SpongeNames.CALLBACK_INFO_RETURNABLE) continue
@@ -75,56 +83,3 @@ class KMixinProcessor(private val generator: CodeGenerator, private val resolver
         return sb.toString()
     }
 }
-
-private val KSType.javaType: String
-    get() = when (val asString = declaration.qualifiedName!!.asString()) {
-        "kotlin.Int" -> "int"
-        "kotlin.Float" -> "float"
-        "kotlin.Double" -> "double"
-        "kotlin.Long" -> "long"
-        "kotlin.Short" -> "short"
-        "kotlin.Byte" -> "byte"
-        "kotlin.Boolean" -> "boolean"
-        "kotlin.Char" -> "char"
-        "kotlin.Unit" -> "void"
-        "kotlin.String" -> "java.lang.String"
-        "kotlin.Any" -> "java.lang.Object"
-        "kotlin.Nothing" -> "void"
-        "kotlin.IntArray" -> "int[]"
-        "kotlin.FloatArray" -> "float[]"
-        "kotlin.DoubleArray" -> "double[]"
-        "kotlin.LongArray" -> "long[]"
-        "kotlin.ShortArray" -> "short[]"
-        "kotlin.ByteArray" -> "byte[]"
-        "kotlin.BooleanArray" -> "boolean[]"
-        "kotlin.CharArray" -> "char[]"
-        else -> asString
-    }
-
-private val KSType.javaBoxedType: String
-    get() = when (val asString = declaration.qualifiedName!!.asString()) {
-        "kotlin.Int" -> "java.lang.Integer"
-        "kotlin.Float" -> "java.lang.Float"
-        "kotlin.Double" -> "java.lang.Double"
-        "kotlin.Long" -> "java.lang.Long"
-        "kotlin.Short" -> "java.lang.Short"
-        "kotlin.Byte" -> "java.lang.Byte"
-        "kotlin.Boolean" -> "java.lang.Boolean"
-        "kotlin.Char" -> "java.lang.Character"
-        "kotlin.Unit" -> "void"
-        "kotlin.String" -> "java.lang.String"
-        "kotlin.Any" -> "java.lang.Object"
-        "kotlin.Nothing" -> "void"
-        "kotlin.IntArray" -> "int[]"
-        "kotlin.FloatArray" -> "float[]"
-        "kotlin.DoubleArray" -> "double[]"
-        "kotlin.LongArray" -> "long[]"
-        "kotlin.ShortArray" -> "short[]"
-        "kotlin.ByteArray" -> "byte[]"
-        "kotlin.BooleanArray" -> "boolean[]"
-        "kotlin.CharArray" -> "char[]"
-        else -> asString
-    }
-
-private fun KSAnnotated.hasAnnotation(name: String) =
-    annotations.any { it.annotationType.resolve().declaration.qualifiedName?.asString() == name }
