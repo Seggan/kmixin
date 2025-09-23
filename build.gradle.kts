@@ -1,7 +1,6 @@
 plugins {
-    `kotlin-dsl`
-    id("com.gradle.plugin-publish") version "1.3.0"
-    id("com.gradleup.shadow") version "8.3.2"
+    kotlin("jvm") version "2.1.0"
+    `maven-publish`
 }
 
 repositories {
@@ -10,33 +9,25 @@ repositories {
 }
 
 group = "io.github.seggan"
-version = "0.1.0"
+version = "0.1.0-SNAPSHOT"
 
 dependencies {
-    implementation("org.ow2.asm:asm:9.7.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    implementation("com.google.devtools.ksp:symbol-processing-api:2.2.10-2.0.2")
     implementation("org.spongepowered:mixin:0.8.7")
-    implementation("org.jetbrains.kotlin:kotlin-metadata-jvm:2.0.20")
 }
 
 kotlin {
     jvmToolchain(21)
 }
 
-tasks.shadowJar {
-    archiveClassifier = ""
-}
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
 
-gradlePlugin {
-    website = "https://github.com/Seggan/kmixin"
-    vcsUrl = "https://github.com/Seggan/kmixin"
-    plugins {
-        create("kmixin") {
-            id = "io.github.seggan.kmixin"
-            displayName = "KMixin"
-            description = "A plugin that generates Java wrappers around Kotlin mixins"
-            tags = setOf("mixin", "kotlin", "java")
-            implementationClass = "io.github.seggan.kmixin.KMixinPlugin"
+            groupId = project.group.toString()
+            artifactId = "kmixin"
+            version = project.version.toString()
         }
     }
 }
