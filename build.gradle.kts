@@ -13,7 +13,6 @@ version = "0.1.0-SNAPSHOT"
 
 dependencies {
     implementation("com.google.devtools.ksp:symbol-processing-api:2.2.10-2.0.2")
-    implementation("org.spongepowered:mixin:0.8.7")
 }
 
 kotlin {
