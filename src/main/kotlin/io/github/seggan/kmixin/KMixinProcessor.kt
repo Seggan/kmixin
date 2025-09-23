@@ -18,7 +18,7 @@ class KMixinProcessor(private val generator: CodeGenerator, private val resolver
         val sb = StringBuilder()
         val pkg = declaration.packageName.asString() + ".impl"
         sb.append(createFileHeader(declaration, pkg))
-        sb.append("\npublic interface ")
+        sb.append("public interface ")
             .append(declaration.simpleName.asString())
             .append(" extends ")
             .append(declaration.qualifiedName!!.asString())
@@ -64,7 +64,7 @@ class KMixinProcessor(private val generator: CodeGenerator, private val resolver
         sb.append(createFileHeader(file, pkg))
 
         val className = file.fileName.removeSuffix(".kt")
-        sb.append("\npublic abstract class ").append(className).append(" {\n")
+        sb.append("public abstract class ").append(className).append(" {\n")
         for (function in file.declarations.filter { it.hasAnnotation(SpongeNames.INJECT) }) {
             if (function !is KSFunctionDeclaration) continue
             sb.appendLine(processFunction(function).prependIndent("    "))
