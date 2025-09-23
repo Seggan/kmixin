@@ -84,7 +84,7 @@ fun KSAnnotation.toJava(): String {
         sb.append(valueAsJava(arg.value))
         if (i < arguments.size - 1) sb.append(", ")
     }
-    sb.setLength(sb.length - 2) // Remove last ", "
+    if (sb.last() != '(') sb.setLength(sb.length - 2) // Remove last ", "
     sb.append(')')
     return sb.toString()
 }
