@@ -44,8 +44,13 @@ class KMixinProcessor(private val generator: CodeGenerator, private val resolver
         }
         for (function in declaration.getDeclaredFunctions().filter { it.simpleName.asString() != "<init>" }) {
             sb.appendLine()
-            sb.append(createFunctionHeader(function, false).prependIndent("    "))
-            sb.appendLine(";\n")
+            sb.append(generateAnnotations(function))
+            sb.append("    public void ").append(function.simpleName.asString()).append('(')
+            for (param in function.parameters) {
+                sb.append(param.type.resolve().javaType).append(' ').append(param.name!!.asString()).append(", ")
+            }
+            if (sb.last() != '(') sb.setLength(sb.length - 2) // Remove last ", "
+            sb.appendLine(");\n")
         }
 
         sb.append("}\n")
@@ -98,33 +103,31 @@ class KMixinProcessor(private val generator: CodeGenerator, private val resolver
         append(generateAnnotations(annotated))
     }
 
-    private fun createFunctionHeader(function: KSFunctionDeclaration, private: Boolean) = buildString {
-        append(generateAnnotations(function))
-        if (private) append("private") else append("public")
-        if (function.extensionReceiver == null) append(" static")
-        append(" void ").append(function.simpleName.asString()).append('(')
+    private fun processFunction(function: KSFunctionDeclaration): String {
+        val sb = StringBuilder()
+        sb.append(generateAnnotations(function))
+        sb.append("private")
+        if (function.extensionReceiver == null) sb.append(" static")
+        sb.append(" void ").append(function.simpleName.asString()).append('(')
+        val returnType = function.returnType!!.resolve().javaBoxedType
         for (param in function.parameters) {
             val type = param.type.resolve().javaType
             if (type == SpongeNames.CALLBACK_INFO || type == SpongeNames.CALLBACK_INFO_RETURNABLE) continue
-            append(type).append(' ').append(param.name!!.asString()).append(", ")
+            sb.append(type).append(' ').append(param.name!!.asString()).append(", ")
         }
-        if (last() != '(') setLength(length - 2) // Remove last ", "
-        append(")")
-    }
-
-    private fun processFunction(function: KSFunctionDeclaration): String {
-        val sb = StringBuilder()
-        sb.append(createFunctionHeader(function, true))
-        sb.deleteAt(sb.lastIndex)
-        if (sb.last() != '(') sb.append(", ")
-        val returnType = function.returnType!!.resolve().javaBoxedType
-        if (returnType != "void") {
-            sb.append("CallbackInfoReturnable<").append(returnType).append("> ci")
-        } else {
-            sb.append("CallbackInfo ci")
+        if (sb.last() != '(') {
+            sb.setLength(sb.length - 2) // Remove last ", "
+        }
+        if (function.hasAnnotation(SpongeNames.INJECT)) {
+            if (sb.last() != '(') sb.append(", ")
+            if (returnType != "void") {
+                sb.append("CallbackInfoReturnable<").append(returnType).append("> ci")
+            } else {
+                sb.append("CallbackInfo ci")
+            }
         }
         sb.append(") {\n    ")
-        if (returnType != "void") sb.append("ci.setReturnValue(")
+        if (function.hasAnnotation(SpongeNames.INJECT) && returnType != "void") sb.append("ci.setReturnValue(")
         sb.append(resolver.getOwnerJvmClassName(function)!!)
             .append('.')
             .append(resolver.getJvmName(function)!!)
@@ -133,17 +136,24 @@ class KMixinProcessor(private val generator: CodeGenerator, private val resolver
             sb.append('(').append(function.extensionReceiver!!.resolve().javaType).append(") (Object) this")
             if (function.parameters.isNotEmpty()) sb.append(", ")
         }
-        for ((i, param) in function.parameters.withIndex()) {
-            val type = param.type.resolve().javaType
-            if (type == SpongeNames.CALLBACK_INFO || type == SpongeNames.CALLBACK_INFO_RETURNABLE) {
-                sb.append("ci")
-            } else {
-                sb.append(param.name!!.asString())
+        if (function.hasAnnotation(SpongeNames.INJECT)) {
+            if (function.parameters.isNotEmpty()) {
+                val param = function.parameters.singleOrNull()
+                    ?: throw IllegalArgumentException("@Inject function must have zero or one parameters")
+                if (param.type.resolve().javaType == SpongeNames.CALLBACK_INFO || param.type.resolve().javaType == SpongeNames.CALLBACK_INFO_RETURNABLE) {
+                    sb.append("ci")
+                } else {
+                    sb.append("ci.getReturnValue()")
+                }
             }
-            if (i < function.parameters.size - 1) sb.append(", ")
+        } else {
+            for ((i, param) in function.parameters.withIndex()) {
+                sb.append(param.name!!.asString())
+                if (i < function.parameters.size - 1) sb.append(", ")
+            }
         }
         sb.append(")")
-        if (returnType != "void") sb.append(")")
+        if (function.hasAnnotation(SpongeNames.INJECT) && returnType != "void") sb.append(")")
         sb.append(";\n}")
         return sb.toString()
     }

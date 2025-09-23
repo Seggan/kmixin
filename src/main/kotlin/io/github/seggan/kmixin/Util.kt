@@ -58,6 +58,9 @@ val KSType.javaBoxedType: String
 fun KSAnnotated.hasAnnotation(name: String) =
     annotations.any { it.annotationType.resolve().declaration.qualifiedName?.asString() == name }
 
+fun KSAnnotated.getAnnotation(name: String): KSAnnotation? =
+    annotations.firstOrNull { it.annotationType.resolve().declaration.qualifiedName?.asString() == name }
+
 fun KSAnnotation.toJava(): String {
     fun valueAsJava(value: Any?): String {
         return when (value) {
