@@ -11,7 +11,7 @@ repositories {
 }
 
 group = "io.github.seggan"
-version = "0.1.1"
+version = "0.1.2"
 
 dependencies {
     implementation("com.google.devtools.ksp:symbol-processing-api:2.2.10-2.0.2")

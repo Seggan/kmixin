@@ -110,20 +110,21 @@ class KMixinProcessor(private val generator: CodeGenerator, private val resolver
         if (function.extensionReceiver == null) sb.append(" static")
         sb.append(" void ").append(function.simpleName.asString()).append('(')
         val returnType = function.returnType!!.resolve().javaBoxedType
-        for (param in function.parameters) {
-            val type = param.type.resolve().javaType
-            if (type == SpongeNames.CALLBACK_INFO || type == SpongeNames.CALLBACK_INFO_RETURNABLE) continue
-            sb.append(type).append(' ').append(param.name!!.asString()).append(", ")
-        }
-        if (sb.last() != '(') {
-            sb.setLength(sb.length - 2) // Remove last ", "
-        }
         if (function.hasAnnotation(SpongeNames.INJECT)) {
             if (sb.last() != '(') sb.append(", ")
             if (returnType != "void") {
                 sb.append("CallbackInfoReturnable<").append(returnType).append("> ci")
             } else {
                 sb.append("CallbackInfo ci")
+            }
+        } else {
+            for (param in function.parameters) {
+                val type = param.type.resolve().javaType
+                if (type == SpongeNames.CALLBACK_INFO || type == SpongeNames.CALLBACK_INFO_RETURNABLE) continue
+                sb.append(type).append(' ').append(param.name!!.asString()).append(", ")
+            }
+            if (sb.last() != '(') {
+                sb.setLength(sb.length - 2) // Remove last ", "
             }
         }
         sb.append(") {\n    ")
